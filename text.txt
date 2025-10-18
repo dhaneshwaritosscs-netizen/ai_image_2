@@ -1,0 +1,16 @@
+Ai_Model_vs/
+├── app.py                          # Main Flask application
+├── app_simple.py                   # Simple version without AI
+├── inference.py                    # AI model inference
+├── train_enhanced_brand_model_color.py  # Enhanced training script
+├── train_peft.py                   # Original training script
+├── test_training_data.py           # Training data analysis
+├── requirements.txt                # Dependencies
+├── README.md                       # Documentation
+├── data/                           # Training data
+│   ├── train.jsonl                # 37 training examples
+│   ├── val.jsonl                  # 8 validation examples
+│   └── sample.jsonl               # Sample data
+├── templates/                      # Web interface
+│   └── index.html                 # Main template
+└── uploads/                        # File uploads directory
