@@ -1,0 +1,1674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Data Extractor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #ffffff;
+            height: 100vh;
+            overflow: auto;
+        }
+
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+            min-width: 100vw;
+            overflow-x: auto;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: #f7f7f8;
+            border-right: 1px solid #e5e5e5;
+            display: flex;
+            flex-direction: column;
+            padding: 8px;
+        }
+
+        .sidebar-header {
+            padding: 12px 8px;
+            border-bottom: 1px solid #e5e5e5;
+            margin-bottom: 8px;
+        }
+
+        .new-chat-btn {
+            width: 100%;
+            padding: 12px 16px;
+            background: #ffffff;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .new-chat-btn:hover {
+            background: #f9f9f9;
+        }
+
+        .search-container {
+            width: 100%;
+            margin-bottom: 8px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 8px 12px;
+            background: #ffffff;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #374151;
+            margin-bottom: 4px;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #10a37f;
+            box-shadow: 0 0 0 2px rgba(16, 163, 127, 0.1);
+        }
+
+        .search-btn {
+            width: 100%;
+            padding: 8px 12px;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #6b7280;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .search-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .search-results {
+            max-height: 200px;
+            overflow-y: auto;
+            background: #ffffff;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            margin-top: 4px;
+            display: none;
+        }
+
+        .search-result-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 13px;
+        }
+
+        .search-result-item:hover {
+            background: #f9f9f9;
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .library-btn {
+            width: 100%;
+            padding: 8px 12px;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #6b7280;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .library-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .clear-chats-btn {
+            width: 100%;
+            padding: 8px 12px;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #dc2626;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .clear-chats-btn:hover {
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+
+        .chats-section {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .chats-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 8px 12px;
+            margin-bottom: 4px;
+        }
+
+        .chat-item {
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #374151;
+            margin-bottom: 2px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+        }
+
+        .chat-item:hover {
+            background: #f0f0f0;
+        }
+
+        .chat-item.active {
+            background: #f0f0f0;
+        }
+
+        .chat-dot {
+            width: 6px;
+            height: 6px;
+            background: #10a37f;
+            border-radius: 50%;
+        }
+
+        .chat-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .chat-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-time {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+
+        .chat-actions {
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .chat-item:hover .chat-actions {
+            opacity: 1;
+        }
+
+        .chat-action-btn {
+            background: transparent;
+            border: none;
+            padding: 4px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .chat-action-btn:hover {
+            background: #e5e5e5;
+            color: #374151;
+        }
+
+        .sidebar-footer {
+            padding: 12px 8px;
+            border-top: 1px solid #e5e5e5;
+            margin-top: auto;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .user-profile:hover {
+            background: #f0f0f0;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            background: #10a37f;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .user-plan {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .upgrade-btn {
+            background: #ffffff;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #374151;
+            cursor: pointer;
+        }
+
+        .upgrade-btn:hover {
+            background: #f9f9f9;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #ffffff;
+            min-width: 600px;
+            overflow-x: auto;
+        }
+
+        .main-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #e5e5e5;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .share-btn {
+            background: #10a37f;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .share-btn:hover {
+            background: #0d8a6b;
+        }
+
+        .main-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #374151;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .share-btn {
+            background: transparent;
+            border: none;
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            color: #6b7280;
+        }
+
+        .share-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .menu-btn {
+            background: transparent;
+            border: none;
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            color: #6b7280;
+        }
+
+        .menu-btn:hover {
+            background: #f0f0f0;
+        }
+
+        /* Chat Messages */
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            min-width: 0;
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+            max-width: 100%;
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .message.user .message-avatar {
+            background: #10a37f;
+            color: white;
+        }
+
+        .message.assistant .message-avatar {
+            background: #f0f0f0;
+            color: #374151;
+        }
+
+        .message-content {
+            background: #f7f7f8;
+            padding: 12px 16px;
+            border-radius: 18px;
+            max-width: 80%;
+            min-width: 200px;
+            word-wrap: break-word;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #374151;
+            overflow-wrap: break-word;
+        }
+
+        .message.user .message-content {
+            background: #10a37f;
+            color: white;
+        }
+
+        .message.assistant .message-content {
+            background: #f7f7f8;
+            color: #374151;
+        }
+
+        /* Input Area */
+        .input-container {
+            padding: 24px;
+            border-top: 1px solid #e5e5e5;
+        }
+
+        .input-wrapper {
+            position: relative;
+            max-width: 800px;
+            min-width: 300px;
+            margin: 0 auto;
+            overflow-x: auto;
+        }
+
+        .message-input {
+            width: 100%;
+            padding: 12px 48px 12px 16px;
+            border: 1px solid #e5e5e5;
+            border-radius: 24px;
+            font-size: 14px;
+            resize: none;
+            outline: none;
+            background: #ffffff;
+            min-height: 48px;
+            max-height: 120px;
+            font-family: inherit;
+        }
+
+        .message-input:focus {
+            border-color: #10a37f;
+        }
+
+        .input-actions {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .attach-btn {
+            background: transparent;
+            border: none;
+            padding: 8px;
+            border-radius: 50%;
+            cursor: pointer;
+            color: #6b7280;
+        }
+
+        .attach-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .mic-btn {
+            background: transparent;
+            border: none;
+            padding: 8px;
+            border-radius: 50%;
+            cursor: pointer;
+            color: #6b7280;
+        }
+
+        .mic-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .send-btn {
+            background: #10a37f;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .send-btn:hover {
+            background: #0d8f6a;
+        }
+
+        .send-btn:disabled {
+            background: #d1d5db;
+            cursor: not-allowed;
+        }
+
+        /* Loading */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #10a37f;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Results Styling */
+        .result-message {
+            background: #f7f7f8;
+            padding: 16px;
+            border-radius: 18px;
+            margin: 8px 0;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .product-info {
+            background: white;
+            border: 1px solid #e5e5e5;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 8px 0;
+            min-width: 300px;
+            overflow-x: auto;
+        }
+
+        .product-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .product-price {
+            font-size: 18px;
+            font-weight: 700;
+            color: #10a37f;
+            margin-bottom: 12px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+            min-width: 0;
+            overflow-x: auto;
+        }
+
+        .info-item {
+            background: #f9f9f9;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 3px solid #10a37f;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #6b7280;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            color: #374151;
+            font-size: 14px;
+        }
+
+        .images-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+            min-width: 0;
+            overflow-x: auto;
+        }
+
+        .image-item {
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e5e5e5;
+        }
+
+        .image-item img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+        }
+
+        .error-message {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border-left: 4px solid #dc2626;
+            margin: 8px 0;
+        }
+
+        .success-message {
+            background: #f0fdf4;
+            color: #16a34a;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border-left: 4px solid #16a34a;
+            margin: 8px 0;
+        }
+
+        .export-section {
+            background: #f9f9f9;
+            border: 1px solid #e5e5e5;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 16px 0;
+            text-align: center;
+            min-width: 300px;
+            overflow-x: auto;
+        }
+
+        .export-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 12px;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .export-btn {
+            background: #10a37f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .export-btn:hover {
+            background: #0d8f6a;
+        }
+
+        .export-btn:disabled {
+            background: #d1d5db;
+            cursor: not-allowed;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e5e5;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 12px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #10a37f;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+
+        /* Link styling */
+        .product-title a:hover {
+            color: #10a37f !important;
+            text-decoration: underline !important;
+        }
+
+        .info-value a:hover {
+            color: #0d8f6a !important;
+        }
+
+        /* Custom Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        /* Firefox scrollbar styling */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #c1c1c1 #f1f1f1;
+        }
+
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 200px;
+            }
+            
+            .main-header {
+                padding: 12px 16px;
+            }
+            
+            .chat-container {
+                padding: 16px;
+            }
+            
+            .input-container {
+                padding: 16px;
+            }
+            
+            .message-content {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <button class="new-chat-btn" onclick="startNewChat()">
+                    <span>+</span>
+                    New chat
+                </button>
+                <div class="search-container">
+                    <input type="text" class="search-input" id="searchInput" placeholder="Search chats..." onkeyup="searchChats()">
+                    <div class="search-results" id="searchResults"></div>
+                </div>
+                <button class="clear-chats-btn" onclick="clearAllChats()">
+                    <span>🗑️</span>
+                    Clear All Chats
+                </button>
+            </div>
+            
+            <div class="chats-section">
+                <div class="chats-title">Chats</div>
+                <!-- Chat history will be populated dynamically -->
+            </div>
+            
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar">D</div>
+                    <div class="user-info">
+                        <div class="user-name">Dhani</div>
+                        <div class="user-plan">Free</div>
+                    </div>
+                    <button class="upgrade-btn">Upgrade</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="main-header">
+                <div class="main-title">
+                    <span>URL Data Extractor</span>
+                </div>
+                <!-- <div class="header-actions">
+                    <button class="share-btn" onclick="shareResults()">📤</button>
+                </div> -->
+            </div>
+
+            <div class="chat-container" id="chatContainer">
+                <div class="message assistant">
+                    <div class="message-avatar">AI</div>
+                    <div class="message-content">
+                        Hello! I can help you extract product information from e-commerce websites. You can either:<br>
+                        • Paste URLs directly in the text area<br>
+                        • Upload an Excel/CSV file with URLs using the 📁 button<br><br>
+                        I'll extract all the relevant product data and provide export options for your convenience.
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-container">
+                <div class="input-wrapper">
+                    <textarea id="urlInput" class="message-input" placeholder="Enter product URLs (one per line or separated by commas)..." rows="1"></textarea>
+                    <div class="input-actions">
+                        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display: none;">
+                        <button class="attach-btn" id="uploadBtn" title="Upload Excel/CSV file">📁</button>
+                        <!-- <button class="mic-btn">🎤</button> -->
+                        <button id="extractBtn" class="send-btn">↑</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p id="loadingText">Extracting data from the website...</p>
+    </div>
+
+    <script>
+        let currentResults = null;
+        let currentErrors = null;
+        let currentChatId = null;
+        let chatCounter = 1;
+
+        document.getElementById('extractBtn').addEventListener('click', extractData);
+        document.getElementById('uploadBtn').addEventListener('click', () => document.getElementById('fileInput').click());
+        document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+        
+        document.getElementById('urlInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                extractData();
+            }
+        });
+
+        // Initialize chat list on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateChatList();
+        });
+
+        // Auto-resize textarea
+        document.getElementById('urlInput').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+
+        // Chat Management Functions
+        function saveChat() {
+            if (!currentChatId) {
+                currentChatId = 'chat_' + Date.now();
+            }
+            
+            const chatData = {
+                id: currentChatId,
+                name: getChatName(),
+                messages: getChatMessages(),
+                results: currentResults,
+                errors: currentErrors,
+                timestamp: new Date().toISOString(),
+                urlInput: document.getElementById('urlInput').value
+            };
+            
+            localStorage.setItem('chat_' + currentChatId, JSON.stringify(chatData));
+            updateChatList();
+        }
+
+        function loadChat(chatId) {
+            const chatData = localStorage.getItem('chat_' + chatId);
+            if (chatData) {
+                const chat = JSON.parse(chatData);
+                currentChatId = chat.id;
+                currentResults = chat.results;
+                currentErrors = chat.errors;
+                
+                // Clear current chat
+                const chatContainer = document.getElementById('chatContainer');
+                chatContainer.innerHTML = '';
+                
+                // Load messages
+                chat.messages.forEach(message => {
+                    addMessage(message.content, message.isUser, false);
+                });
+                
+                // Restore input
+                document.getElementById('urlInput').value = chat.urlInput || '';
+                
+                // Update active chat
+                updateActiveChat(chatId);
+            }
+        }
+
+        function deleteChat(chatId) {
+            if (confirm('Are you sure you want to delete this chat?')) {
+                localStorage.removeItem('chat_' + chatId);
+                if (currentChatId === chatId) {
+                    startNewChat();
+                }
+                updateChatList();
+            }
+        }
+
+        function clearAllChats() {
+            // Count existing chats
+            const chatKeys = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('chat_')) {
+                    chatKeys.push(key);
+                }
+            }
+            
+            if (chatKeys.length === 0) {
+                alert('No chats to clear.');
+                return;
+            }
+            
+            if (confirm(`Are you sure you want to delete all ${chatKeys.length} chats? This action cannot be undone.`)) {
+                // Clear all chat data from localStorage
+                chatKeys.forEach(key => {
+                    localStorage.removeItem(key);
+                });
+                
+                // Reset current chat
+                currentChatId = null;
+                currentResults = null;
+                currentErrors = null;
+                chatCounter = 1;
+                
+                // Start a new chat
+                startNewChat();
+                
+                // Update chat list
+                updateChatList();
+                
+                alert('All chats have been cleared successfully.');
+            }
+        }
+
+        function searchChats() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+            const searchResults = document.getElementById('searchResults');
+            
+            if (searchTerm === '') {
+                searchResults.style.display = 'none';
+                return;
+            }
+            
+            // Get all chats from localStorage
+            const chats = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('chat_')) {
+                    const chatData = JSON.parse(localStorage.getItem(key));
+                    chats.push(chatData);
+                }
+            }
+            
+            // Filter chats based on search term
+            const filteredChats = chats.filter(chat => {
+                return chat.name.toLowerCase().includes(searchTerm) ||
+                       (chat.messages && chat.messages.some(msg => 
+                           msg.content.toLowerCase().includes(searchTerm)
+                       )) ||
+                       (chat.results && chat.results.some(result => 
+                           result.name && result.name.toLowerCase().includes(searchTerm)
+                       ));
+            });
+            
+            // Display search results
+            if (filteredChats.length === 0) {
+                searchResults.innerHTML = '<div class="search-result-item">No chats found</div>';
+            } else {
+                searchResults.innerHTML = filteredChats.map(chat => 
+                    `<div class="search-result-item" onclick="loadChat('${chat.id}'); hideSearchResults();">
+                        <div style="font-weight: 500;">${chat.name}</div>
+                        <div style="font-size: 11px; color: #6b7280;">${new Date(chat.timestamp).toLocaleDateString()}</div>
+                    </div>`
+                ).join('');
+            }
+            
+            searchResults.style.display = 'block';
+        }
+
+        function hideSearchResults() {
+            document.getElementById('searchResults').style.display = 'none';
+            document.getElementById('searchInput').value = '';
+        }
+
+        function shareResults() {
+            if (!currentResults || currentResults.length === 0) {
+                alert('No results to share. Please extract some data first.');
+                return;
+            }
+            
+            // Create shareable text
+            let shareText = '🔗 URL Data Extractor Results\n\n';
+            shareText += `📊 Processed ${currentResults.length} URLs successfully\n\n`;
+            
+            currentResults.forEach((result, index) => {
+                shareText += `${index + 1}. ${result.name || 'Product'}\n`;
+                shareText += `   💰 Price: ${result.price || 'N/A'}\n`;
+                shareText += `   🏷️ Brand: ${result.brand || 'N/A'}\n`;
+                shareText += `   🔗 URL: ${result.url}\n`;
+                if (result.description) {
+                    shareText += `   📝 Description: ${result.description.substring(0, 100)}...\n`;
+                }
+                shareText += '\n';
+            });
+            
+            shareText += '\n📱 Extracted using URL Data Extractor';
+            
+            // Try to use Web Share API if available
+            if (navigator.share) {
+                navigator.share({
+                    title: 'URL Data Extractor Results',
+                    text: shareText
+                }).catch(err => {
+                    console.log('Error sharing:', err);
+                    fallbackShare(shareText);
+                });
+            } else {
+                fallbackShare(shareText);
+            }
+        }
+
+        function fallbackShare(text) {
+            // Copy to clipboard
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Results copied to clipboard! You can now paste them anywhere.');
+            }).catch(() => {
+                // Fallback: show in prompt
+                prompt('Copy these results:', text);
+            });
+        }
+
+        function renameChat(chatId) {
+            const chatData = localStorage.getItem('chat_' + chatId);
+            if (chatData) {
+                const chat = JSON.parse(chatData);
+                const newName = prompt('Enter new chat name:', chat.name);
+                if (newName && newName.trim()) {
+                    chat.name = newName.trim();
+                    localStorage.setItem('chat_' + chatId, JSON.stringify(chat));
+                    updateChatList();
+                }
+            }
+        }
+
+        function getChatName() {
+            if (currentResults && currentResults.length > 0) {
+                return currentResults[0].name || 'Product Extraction';
+            }
+            return 'New Chat ' + chatCounter++;
+        }
+
+        function getChatMessages() {
+            const chatContainer = document.getElementById('chatContainer');
+            const messages = [];
+            const messageElements = chatContainer.querySelectorAll('.message');
+            
+            messageElements.forEach(msg => {
+                const content = msg.querySelector('.message-content').innerHTML;
+                const isUser = msg.classList.contains('user');
+                messages.push({ content, isUser });
+            });
+            
+            return messages;
+        }
+
+        function updateChatList() {
+            const chatsSection = document.querySelector('.chats-section');
+            const chatsTitle = chatsSection.querySelector('.chats-title');
+            
+            // Clear existing chats
+            const existingChats = chatsSection.querySelectorAll('.chat-item');
+            existingChats.forEach(chat => chat.remove());
+            
+            // Get all chats from localStorage
+            const chats = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('chat_')) {
+                    const chatData = JSON.parse(localStorage.getItem(key));
+                    chats.push(chatData);
+                }
+            }
+            
+            // Sort by timestamp (newest first)
+            chats.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            // Add chats to list
+            chats.forEach(chat => {
+                const chatItem = document.createElement('div');
+                chatItem.className = 'chat-item';
+                chatItem.innerHTML = `
+                    <div class="chat-dot"></div>
+                    <div class="chat-content">
+                        <div class="chat-name">${chat.name}</div>
+                        <div class="chat-time">${new Date(chat.timestamp).toLocaleDateString()}</div>
+                    </div>
+                    <div class="chat-actions">
+                        <button class="chat-action-btn" onclick="renameChat('${chat.id}')" title="Rename">✏️</button>
+                        <button class="chat-action-btn" onclick="deleteChat('${chat.id}')" title="Delete">🗑️</button>
+                    </div>
+                `;
+                
+                chatItem.addEventListener('click', (e) => {
+                    if (!e.target.closest('.chat-actions')) {
+                        loadChat(chat.id);
+                    }
+                });
+                
+                chatsSection.appendChild(chatItem);
+            });
+        }
+
+        function updateActiveChat(chatId) {
+            // Remove active class from all chats
+            document.querySelectorAll('.chat-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Add active class to current chat
+            const activeChat = document.querySelector(`[onclick*="${chatId}"]`);
+            if (activeChat) {
+                activeChat.classList.add('active');
+            }
+        }
+
+        // Auto-save chat when data changes
+        function autoSaveChat() {
+            if (currentResults || currentErrors) {
+                saveChat();
+            }
+        }
+
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Validate file type
+            const allowedTypes = ['.xlsx', '.xls', '.csv'];
+            const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+            if (!allowedTypes.includes(fileExtension)) {
+                alert('Please upload Excel (.xlsx, .xls) or CSV files only.');
+                return;
+            }
+
+            // Show loading
+            addLoadingMessage('Reading Excel file...');
+            document.getElementById('extractBtn').disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                removeLoadingMessage();
+
+                if (data.error) {
+                    addMessage(`<div class="error-message"><strong>Upload Error:</strong> ${data.error}</div>`);
+                } else {
+                    // Populate the textarea with URLs from Excel
+                    document.getElementById('urlInput').value = data.urls.join('\n');
+                    document.getElementById('urlInput').style.height = 'auto';
+                    document.getElementById('urlInput').style.height = Math.min(document.getElementById('urlInput').scrollHeight, 120) + 'px';
+                    
+                    addMessage(`<div class="success-message"><strong>✅ File Uploaded Successfully!</strong><br>Found ${data.count} URLs in the Excel file. Ready to extract data.</div>`);
+                }
+            } catch (error) {
+                removeLoadingMessage();
+                addMessage(`<div class="error-message"><strong>Upload Error:</strong> Failed to process the file. Please try again.</div>`);
+            } finally {
+                document.getElementById('extractBtn').disabled = false;
+                // Clear the file input
+                event.target.value = '';
+            }
+        }
+
+        async function exportData(format) {
+            if (!currentResults && !currentErrors) {
+                alert('No data to export. Please extract some URLs first.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/export', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        results: currentResults || [],
+                        errors: currentErrors || [],
+                        format: format
+                    })
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `extracted_data_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.${format === 'csv' ? 'csv' : 'xlsx'}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    const errorData = await response.json();
+                    alert(`Export failed: ${errorData.error}`);
+                }
+            } catch (error) {
+                alert(`Export failed: ${error.message}`);
+            }
+        }
+
+        function parseUrls(urlText) {
+            // Split by newlines and commas, then clean up
+            let urls = urlText.split(/[\n,]/)
+                .map(url => url.trim())
+                .filter(url => url.length > 0);
+            
+            // Remove duplicates
+            return [...new Set(urls)];
+        }
+
+        function addMessage(content, isUser = false, autoSave = true) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'assistant'}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = isUser ? 'U' : 'AI';
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            messageContent.innerHTML = content;
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContent);
+            chatContainer.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            // Auto-save if enabled
+            if (autoSave) {
+                setTimeout(autoSaveChat, 500);
+            }
+        }
+
+        function addLoadingMessage(customText = 'Extracting data from the website...') {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message assistant';
+            messageDiv.id = 'loadingMessage';
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = 'AI';
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            messageContent.innerHTML = `<div class="spinner"></div> ${customText}`;
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContent);
+            chatContainer.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function removeLoadingMessage() {
+            const loadingMessage = document.getElementById('loadingMessage');
+            if (loadingMessage) {
+                loadingMessage.remove();
+            }
+        }
+
+        async function extractData() {
+            const urlText = document.getElementById('urlInput').value.trim();
+            if (!urlText) {
+                alert('Please enter at least one valid URL');
+                return;
+            }
+
+            const urls = parseUrls(urlText);
+            if (urls.length === 0) {
+                alert('Please enter at least one valid URL');
+                return;
+            }
+
+            // Add user message
+            addMessage(urlText.replace(/\n/g, '<br>'), true);
+
+            // Clear input
+            document.getElementById('urlInput').value = '';
+            document.getElementById('urlInput').style.height = 'auto';
+
+            // Show loading
+            addLoadingMessage();
+            document.getElementById('extractBtn').disabled = true;
+
+            try {
+                const response = await fetch('/extract', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ urls: urls })
+                });
+
+                const data = await response.json();
+                removeLoadingMessage();
+
+                if (data.error) {
+                    addMessage(`<div class="error-message"><strong>Error:</strong> ${data.error}</div>`);
+                } else {
+                    // Store results for export
+                    currentResults = data.results || [];
+                    currentErrors = data.errors || [];
+                    addMessage(generateChatResultsHTML(data));
+                }
+            } catch (error) {
+                removeLoadingMessage();
+                addMessage(`<div class="error-message"><strong>Error:</strong> Failed to extract data. Please try again.</div>`);
+            } finally {
+                document.getElementById('extractBtn').disabled = false;
+            }
+        }
+
+        function startNewChat() {
+            const chatContainer = document.getElementById('chatContainer');
+            chatContainer.innerHTML = `
+                <div class="message assistant">
+                    <div class="message-avatar">AI</div>
+                    <div class="message-content">
+                        Hello! I can help you extract product information from e-commerce websites. You can either:<br>
+                        • Paste URLs directly in the text area<br>
+                        • Upload an Excel/CSV file with URLs using the 📁 button<br><br>
+                        I'll extract all the relevant product data and provide export options for your convenience.
+                    </div>
+                </div>
+            `;
+            document.getElementById('urlInput').value = '';
+            // Clear stored results and chat ID
+            currentResults = null;
+            currentErrors = null;
+            currentChatId = null;
+            
+            // Update chat list
+            updateChatList();
+        }
+
+        function generateChatResultsHTML(data) {
+            let html = '';
+
+            // Summary section
+            html += `
+                <div class="success-message">
+                    <strong>✅ Extraction Complete!</strong><br>
+                    Processed ${data.total_urls} URLs: ${data.successful} successful, ${data.failed} failed
+                </div>
+            `;
+
+            // Show errors first
+            if (data.errors && data.errors.length > 0) {
+                html += `<div class="error-message"><strong>❌ Failed Extractions:</strong><br>`;
+                data.errors.forEach(error => {
+                    html += `• ${error.url}: ${error.error}<br>`;
+                });
+                html += `</div>`;
+            }
+
+            // Show successful results
+            if (data.results && data.results.length > 0) {
+                data.results.forEach((result, index) => {
+                    html += generateProductHTML(result, index + 1);
+                });
+            }
+
+            // Add export section if there are results
+            if ((data.results && data.results.length > 0) || (data.errors && data.errors.length > 0)) {
+                html += `
+                    <div class="export-section">
+                        <div class="export-title">📊 Export Extracted Data</div>
+                        <div class="export-buttons">
+                            <button class="export-btn" onclick="exportData('excel')">
+                                📈 Export as Excel
+                            </button>
+                            <button class="export-btn" onclick="exportData('csv')">
+                                📄 Export as CSV
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return html;
+        }
+
+        function generateProductHTML(data, index) {
+            let html = `
+                <div class="product-info">
+                        <div class="product-title"><a href="${data.url}" target="_blank" style="color: #374151; text-decoration: none;">${data.name || 'Product Name Not Found'}</a></div>
+                        <div class="product-price">${data.price || 'Price Not Available'}</div>
+                        <div class="info-grid">
+            `;
+
+            // Add basic information
+            if (data.brand) {
+                html += `<div class="info-item">
+                    <div class="info-label">Brand</div>
+                    <div class="info-value">${data.brand}</div>
+                </div>`;
+            }
+
+            if (data.sku) {
+                html += `<div class="info-item">
+                    <div class="info-label">SKU</div>
+                    <div class="info-value">${data.sku}</div>
+                </div>`;
+            }
+
+            if (data.domain) {
+                html += `<div class="info-item">
+                    <div class="info-label">Website</div>
+                    <div class="info-value"><a href="${data.url}" target="_blank" style="color: #10a37f; text-decoration: underline;">${data.domain}</a></div>
+                </div>`;
+            }
+
+            if (data.extracted_at) {
+                html += `<div class="info-item">
+                    <div class="info-label">Extracted At</div>
+                    <div class="info-value">${data.extracted_at}</div>
+                </div>`;
+            }
+
+            html += `</div>`;
+
+            // Add description
+            if (data.description) {
+                html += `
+                    <div class="info-item">
+                        <div class="info-label">Description</div>
+                        <div class="info-value">${data.description}</div>
+                    </div>
+                `;
+            }
+
+            // Add materials
+            if (data.materials && Array.isArray(data.materials)) {
+                html += `
+                    <div class="info-item">
+                        <div class="info-label">Materials</div>
+                        <div class="info-value">
+                            <ul style="margin: 8px 0; padding-left: 16px;">
+                                ${data.materials.map(material => `<li style="margin: 4px 0;">${material}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Add specifications
+            if (data.specifications && Array.isArray(data.specifications)) {
+                html += `
+                    <div class="info-item">
+                        <div class="info-label">Specifications</div>
+                        <div class="info-value">
+                            <ul style="margin: 8px 0; padding-left: 16px;">
+                                ${data.specifications.map(spec => `<li style="margin: 4px 0;">${spec}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Add colors section - prominent display
+            if (data.colors && Array.isArray(data.colors) && data.colors.length > 0) {
+                // Filter out any invalid colors
+                const validColors = data.colors.filter(color => 
+                    color && 
+                    color.trim() && 
+                    color.length <= 30 &&
+                    !color.match(/^(size|sizes?|price|cost|kr|€|\$|£|¥|₹|USD|EUR|GBP)$/i)
+                );
+                
+                if (validColors.length > 0) {
+                    html += `
+                        <div class="info-item" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-left: 4px solid #007bff; margin: 16px 0; padding: 16px; border-radius: 8px;">
+                            <div class="info-label" style="color: #007bff; font-weight: bold; font-size: 16px; margin-bottom: 12px;">
+                                🎨 Available Colors
+                            </div>
+                            <div class="info-value">
+                                <div style="display: flex; flex-wrap: wrap; gap: 10px; margin: 8px 0;">
+                                    ${validColors.map(color => `
+                                        <div style="background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); 
+                                                    color: #495057; 
+                                                    padding: 10px 16px; 
+                                                    border-radius: 25px; 
+                                                    border: 2px solid #dee2e6; 
+                                                    font-size: 14px; 
+                                                    font-weight: 600;
+                                                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                                                    transition: all 0.3s ease;
+                                                    cursor: pointer;" 
+                                             onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)';"
+                                             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)';">
+                                            ${color}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <div style="font-size: 12px; color: #6c757d; margin-top: 8px;">
+                                    ${validColors.length} color${validColors.length > 1 ? 's' : ''} available
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            if (data.size_chart && Array.isArray(data.size_chart) && data.size_chart.length > 0) {
+                // Filter out any invalid sizes
+                const validSizes = data.size_chart.filter(size => 
+                    size.size && 
+                    size.size.trim() && 
+                    !size.size.match(/^(2024|2025|\d+\.\d{2}|\d+%|\d+px|\d+cm|\d+kg|\d+ml)$/i)
+                );
+                
+                if (validSizes.length > 0) {
+                    html += `
+                        <div class="info-item">
+                            <div class="info-label">Available Sizes</div>
+                            <div class="info-value">
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin: 8px 0;">
+                                    ${validSizes.map(size => `
+                                        <div style="background: ${size.availability === 'In Stock' ? '#f0fdf4' : '#fef2f2'}; 
+                                                    color: ${size.availability === 'In Stock' ? '#16a34a' : '#dc2626'}; 
+                                                    padding: 8px; border-radius: 6px; text-align: center; border: 1px solid ${size.availability === 'In Stock' ? '#bbf7d0' : '#fecaca'};">
+                                            <div style="font-weight: bold; font-size: 12px;">${size.size}</div>
+                                            <div style="font-size: 10px; margin-top: 4px;">${size.availability}</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            // Add size variants
+            if (data.size_variants && Array.isArray(data.size_variants)) {
+                html += `
+                    <div class="info-item">
+                        <div class="info-label">Size Variants</div>
+                        <div class="info-value">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin: 8px 0;">
+                                ${data.size_variants.map(variant => `
+                                    <div style="background: ${variant.availability === 'In Stock' ? '#f0fdf4' : '#fef2f2'}; 
+                                                color: ${variant.availability === 'In Stock' ? '#16a34a' : '#dc2626'}; 
+                                                padding: 8px; border-radius: 6px; text-align: center; border: 1px solid ${variant.availability === 'In Stock' ? '#bbf7d0' : '#fecaca'};">
+                                        <div style="font-weight: bold; font-size: 12px;">Size ${variant.size}</div>
+                                        <div style="font-size: 11px;">${variant.price}</div>
+                                        <div style="font-size: 10px; margin-top: 4px;">${variant.availability}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Add images
+            if (data.images && data.images.length > 0) {
+                html += `
+                    <div class="info-item">
+                        <div class="info-label">Images (${data.images.length})</div>
+                        <div class="images-grid">
+                `;
+                
+                data.images.slice(0, 6).forEach((image, imgIndex) => {
+                    html += `
+                        <div class="image-item">
+                            <img src="${image}" alt="Product Image ${imgIndex + 1}" onerror="this.style.display='none'">
+                        </div>
+                    `;
+                });
+                
+                html += `</div></div>`;
+            }
+
+            html += `</div>`;
+
+            return html;
+        }
+
+    </script>
+</body>
+</html>
